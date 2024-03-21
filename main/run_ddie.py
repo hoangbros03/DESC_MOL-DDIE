@@ -146,7 +146,7 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
     logger.info("  Gradient Accumulation steps = %d", args.gradient_accumulation_steps)
     logger.info("  Total optimization steps = %d", t_total)
 
-    fingerprint = np.load(os.path.join(args.fingerprint_dir, 'corpus_train.npy'), allow_pickle=True)
+    # fingerprint = np.load(os.path.join(args.fingerprint_dir, 'corpus_train.npy'), allow_pickle=True)
 
     global_step = 0
     tr_loss, logging_loss = 0.0, 0.0
@@ -170,7 +170,7 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
                       'desc2_ii':       batch[8],
                       'desc2_am':       batch[9],
                       'desc2_tti':      batch[10],
-                      'fingerprint':    fingerprint[fp_indices],
+                    #   'fingerprint':    fingerprint[fp_indices],
                       'labels':         batch[12],}
             if args.model_type != 'distilbert':
                 inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
@@ -276,7 +276,7 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
         eval_sampler = SequentialSampler(eval_dataset) if args.local_rank == -1 else DistributedSampler(eval_dataset)
         eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size)
 
-        fingerprint = np.load(os.path.join(args.fingerprint_dir, 'corpus_dev.npy'), allow_pickle=True)
+        # fingerprint = np.load(os.path.join(args.fingerprint_dir, 'corpus_dev.npy'), allow_pickle=True)
 
         # Eval!
         logger.info("***** Running evaluation {} *****".format(prefix))
@@ -302,7 +302,7 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
                           'desc2_ii':       batch[8],
                           'desc2_am':       batch[9],
                           'desc2_tti':      batch[10],
-                          'fingerprint':    fingerprint[fp_indices],
+                        #   'fingerprint':    fingerprint[fp_indices],
                           'labels':         batch[12],}
                 if args.model_type != 'distilbert':
                     inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
@@ -317,8 +317,11 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
             else:
                 preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
                 out_label_ids = np.append(out_label_ids, inputs['labels'].detach().cpu().numpy(), axis=0)
-        np.save(os.path.join(args.output_dir, 'preds'), preds)
-        np.save(os.path.join(args.output_dir, 'labels'), out_label_ids)
+        try:
+            np.save(os.path.join(args.output_dir, 'preds'), preds)
+            np.save(os.path.join(args.output_dir, 'labels'), out_label_ids)
+        except:
+            print("Np.save is brokening... No problem")
         eval_loss = eval_loss / nb_eval_steps
         if args.output_mode == "classification":
             preds = np.argmax(preds, axis=1)
@@ -669,8 +672,8 @@ def main():
     tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name if args.tokenizer_name else args.model_name_or_path, do_lower_case=args.do_lower_case)
     desc_tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name if args.tokenizer_name else args.model_name_or_path, do_lower_case=args.do_lower_case)
     #model = model_class.from_pretrained(args.model_name_or_path, from_tf=bool('.ckpt' in args.model_name_or_path), config=config)
-    gnn_config = GNN_Config(os.path.join(args.fingerprint_dir, 'config.json'), args.molecular_vector_size, args.gnn_layer_hidden, args.gnn_layer_output, args.gnn_mode, args.gnn_activation)
-    model = model_class(args, config, gnn_config)
+    # gnn_config = GNN_Config(os.path.join(args.fingerprint_dir, 'config.json'), args.molecular_vector_size, args.gnn_layer_hidden, args.gnn_layer_output, args.gnn_mode, args.gnn_activation)
+    model = model_class(args, config, None)
     if args.use_mol and args.pretrained_gnn_dir is not None:
         model.gnn.load_state_dict(torch.load(os.path.join(args.pretrained_gnn_dir, 'gnn_state_dict')))
         if args.freeze_pretrained_parameters:
