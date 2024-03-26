@@ -367,12 +367,12 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
             examples = torch.load("examples_train.pt")
             for e_idx in range(len(examples)):
                 if examples[e_idx].label == 'negative':
-                    examples[e_idx].label == 'false'
+                    examples[e_idx].label = 'false'
         elif data_type=="test":
             examples = torch.load("examples_test.pt")
             for e_idx in range(len(examples)):
                 if examples[e_idx].label == 'negative':
-                    examples[e_idx].label == 'false'
+                    examples[e_idx].label = 'false'
         else:
             examples = processor.get_dev_examples(args.data_dir) if evaluate else processor.get_train_examples(args.data_dir)
 
