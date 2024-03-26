@@ -440,8 +440,8 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
     two_id = tokenizer.vocab['##2']
 
     all_input_ids = [f.input_ids for f in features]
-    print(len(all_input_ids))
-    print(all_input_ids[0].shape)
+    # print(len(all_input_ids))
+    # print(all_input_ids[0].shape)
     all_entity1_pos= []
     all_entity2_pos= []
     for input_ids in all_input_ids:
@@ -482,7 +482,7 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
     all_desc2_ii = torch.tensor([f.input_ids for f in features], dtype=torch.long)
     all_desc2_am = torch.tensor([f.input_ids for f in features], dtype=torch.long)
     all_desc2_tti = torch.tensor([f.input_ids for f in features], dtype=torch.long)
-    
+
     # Fingerprint
     fingerprint_indices = torch.tensor(list(range(len(features))), dtype=torch.long)
 
