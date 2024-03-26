@@ -266,7 +266,7 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
     results = {}
     for eval_task, eval_output_dir in zip(eval_task_names, eval_outputs_dirs):
         #eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, evaluate=True)
-        eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, desc_tokenizer, evaluate=True)
+        eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, desc_tokenizer, evaluate=True, data_type="test")
         # eval_dataset = torch.load("ddi_test.pt")
 
         if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
@@ -708,7 +708,7 @@ def main():
     # Training
     if args.do_train:
         #train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False)
-        train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, desc_tokenizer, evaluate=False)
+        train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, desc_tokenizer, evaluate=False, data_type="train")
         # train_dataset =torch.load ("ddi_train.pt")
         global_step, tr_loss, storage_model =  train(args, train_dataset, model, tokenizer, desc_tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)

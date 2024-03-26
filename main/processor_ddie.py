@@ -28,9 +28,9 @@ class DDIProcessor(DataProcessor):
     def get_labels(self, mode='ddie'):
         """See base class."""
         if mode == 'ddie':
-            return ['false', 'mechanism', 'effect', 'advise', 'int']
+            return ['negative', 'mechanism', 'effect', 'advise', 'int']
         elif mode == 'pretraining':
-            return ['false', 'positive']
+            return ['negative', 'positive']
 
     def _create_examples(self, lines, set_type):
         """Creates examples for the training and dev sets."""
