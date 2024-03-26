@@ -396,6 +396,7 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
     output_mode = output_modes[task]
     # For Drug1
     # Load data features from cache or dataset file
+
     all_desc_features = []
     for drug_indx in (1,2):
         cached_desc_features_file = os.path.join(args.data_dir, 'cached_desc{}_{}_{}_{}_{}'.format(
@@ -439,6 +440,8 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
     two_id = tokenizer.vocab['##2']
 
     all_input_ids = [f.input_ids for f in features]
+    print(len(all_input_ids))
+    print(all_input_ids[0].shape)
     all_entity1_pos= []
     all_entity2_pos= []
     for input_ids in all_input_ids:
