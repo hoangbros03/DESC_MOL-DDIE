@@ -490,9 +490,9 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
     #dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids, all_relative_dist1, all_relative_dist2, all_labels)
     dataset = TensorDataset(all_input_ids, all_attention_mask, all_token_type_ids,
                             all_relative_dist1, all_relative_dist2,
-                            all_desc1_ii, all_desc1_am, all_desc1_tti,
-                            all_desc2_ii, all_desc2_am, all_desc2_tti,
-                            fingerprint_indices,
+                            # all_desc1_ii, all_desc1_am, all_desc1_tti,
+                            # all_desc2_ii, all_desc2_am, all_desc2_tti,
+                            # fingerprint_indices,
                             all_labels)
     return dataset
 
