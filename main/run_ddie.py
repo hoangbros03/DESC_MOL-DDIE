@@ -359,7 +359,8 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
         features = torch.load(cached_features_file)
     else:
         logger.info("Creating features from dataset file at %s", args.data_dir)
-        label_list = processor.get_labels()
+        # label_list = processor.get_labels()
+        label_list = ['false', 'mechanism', 'effect', 'advise', 'int']
         if task in ['mnli', 'mnli-mm'] and args.model_type in ['roberta']:
             # HACK(label indices are swapped in RoBERTa pretrained model)
             label_list[1], label_list[2] = label_list[2], label_list[1] 
