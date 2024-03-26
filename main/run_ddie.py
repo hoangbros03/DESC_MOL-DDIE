@@ -158,20 +158,20 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
         epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
         for step, batch in enumerate(epoch_iterator):
             model.train()
-            fp_indices = batch[11]
+            # fp_indices = batch[11]
             batch = tuple(t.to(args.device) for t in batch)
             inputs = {'input_ids':      batch[0],
                       'attention_mask': batch[1],
                       'relative_dist1': batch[3],
                       'relative_dist2': batch[4],
-                      'desc1_ii':       batch[5],
-                      'desc1_am':       batch[6],
-                      'desc1_tti':      batch[7],
-                      'desc2_ii':       batch[8],
-                      'desc2_am':       batch[9],
-                      'desc2_tti':      batch[10],
+                    #   'desc1_ii':       batch[5],
+                    #   'desc1_am':       batch[6],
+                    #   'desc1_tti':      batch[7],
+                    #   'desc2_ii':       batch[8],
+                    #   'desc2_am':       batch[9],
+                    #   'desc2_tti':      batch[10],
                     #   'fingerprint':    fingerprint[fp_indices],
-                      'labels':         batch[12],}
+                      'labels':         batch[5],}
             if args.model_type != 'distilbert':
                 inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
             outputs = model(**inputs)
@@ -266,7 +266,8 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
     results = {}
     for eval_task, eval_output_dir in zip(eval_task_names, eval_outputs_dirs):
         #eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, evaluate=True)
-        eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, desc_tokenizer, evaluate=True)
+        # eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, desc_tokenizer, evaluate=True)
+        eval_dataset = torch.load("ddi_test.pt")
 
         if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
             os.makedirs(eval_output_dir)
@@ -288,7 +289,7 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
         out_label_ids = None
         for batch in tqdm(eval_dataloader, desc="Evaluating"):
             model.eval()
-            fp_indices = batch[11]
+            # fp_indices = batch[11]
             batch = tuple(t.to(args.device) for t in batch)
 
             with torch.no_grad():
@@ -296,14 +297,14 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
                           'attention_mask': batch[1],
                           'relative_dist1': batch[3],
                           'relative_dist2': batch[4],
-                          'desc1_ii':       batch[5],
-                          'desc1_am':       batch[6],
-                          'desc1_tti':      batch[7],
-                          'desc2_ii':       batch[8],
-                          'desc2_am':       batch[9],
-                          'desc2_tti':      batch[10],
+                        #   'desc1_ii':       batch[5],
+                        #   'desc1_am':       batch[6],
+                        #   'desc1_tti':      batch[7],
+                        #   'desc2_ii':       batch[8],
+                        #   'desc2_am':       batch[9],
+                        #   'desc2_tti':      batch[10],
                         #   'fingerprint':    fingerprint[fp_indices],
-                          'labels':         batch[12],}
+                          'labels':         batch[5],}
                 if args.model_type != 'distilbert':
                     inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
                 outputs = model(**inputs)
@@ -701,9 +702,8 @@ def main():
     # Training
     if args.do_train:
         #train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False)
-        train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, desc_tokenizer, evaluate=False)
-        #global_step, tr_loss = train(args, train_dataset, model, tokenizer, storage_model) if args.parameter_averaging else train(args, train_dataset, model, tokenizer, None)
-        #global_step, tr_loss = train(args, train_dataset, model, tokenizer, desc_tokenizer, storage_model) if args.parameter_averaging else train(args, train_dataset, model, tokenizer, desc_tokenizer, None)
+        # train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, desc_tokenizer, evaluate=False)
+        train_dataset = torch.load("ddi_train.pt")
         global_step, tr_loss, storage_model =  train(args, train_dataset, model, tokenizer, desc_tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
 
