@@ -266,8 +266,8 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
     results = {}
     for eval_task, eval_output_dir in zip(eval_task_names, eval_outputs_dirs):
         #eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, evaluate=True)
-        # eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, desc_tokenizer, evaluate=True)
-        eval_dataset = torch.load("ddi_test.pt")
+        eval_dataset = load_and_cache_examples(args, eval_task, tokenizer, desc_tokenizer, evaluate=True)
+        # eval_dataset = torch.load("ddi_test.pt")
 
         if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
             os.makedirs(eval_output_dir)
@@ -342,7 +342,7 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
 
 
 #def load_and_cache_examples(args, task, tokenizer, evaluate=False):
-def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=False):
+def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=False, data_type='no'):
     if args.local_rank not in [-1, 0] and not evaluate:
         torch.distributed.barrier()  # Make sure only the first process in distributed training process the dataset, and the others will use the cache
 
@@ -363,7 +363,13 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
         if task in ['mnli', 'mnli-mm'] and args.model_type in ['roberta']:
             # HACK(label indices are swapped in RoBERTa pretrained model)
             label_list[1], label_list[2] = label_list[2], label_list[1] 
-        examples = processor.get_dev_examples(args.data_dir) if evaluate else processor.get_train_examples(args.data_dir)
+        if data_type=="train":
+            examples = torch.load("examples_train.pt")
+        elif data_type=="test":
+            examples = torch.load("examples_test.pt")
+        else:
+            examples = processor.get_dev_examples(args.data_dir) if evaluate else processor.get_train_examples(args.data_dir)
+
         features = convert_examples_to_features(examples,
                                                 tokenizer,
                                                 label_list=label_list,
@@ -702,8 +708,8 @@ def main():
     # Training
     if args.do_train:
         #train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False)
-        # train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, desc_tokenizer, evaluate=False)
-        train_dataset = torch.load("ddi_train.pt")
+        train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, desc_tokenizer, evaluate=False)
+        # train_dataset =torch.load ("ddi_train.pt")
         global_step, tr_loss, storage_model =  train(args, train_dataset, model, tokenizer, desc_tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
 
