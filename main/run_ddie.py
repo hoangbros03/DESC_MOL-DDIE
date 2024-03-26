@@ -397,38 +397,38 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
     # For Drug1
     # Load data features from cache or dataset file
 
-    all_desc_features = []
-    for drug_indx in (1,2):
-        cached_desc_features_file = os.path.join(args.data_dir, 'cached_desc{}_{}_{}_{}_{}'.format(
-            drug_indx,
-            'dev' if evaluate else 'train',
-            list(filter(None, args.model_name_or_path.split('/'))).pop(),
-            str(desc_max_seq_length),
-            str(task)))
-        if os.path.exists(cached_desc_features_file) and not args.overwrite_cache:
-            logger.info("Loading description of drug%s features from cached file %s", drug_indx, cached_desc_features_file)
-            desc_features = torch.load(cached_desc_features_file)
-        else:
-            logger.info("Creating description of drug%s features from dataset file at %s", drug_indx, args.data_dir)
-            # label_list = desc_processor.get_labels()
-            label_list = ['negative', 'mechanism', 'effect', 'advise', 'int']
-            if task in ['mnli', 'mnli-mm'] and args.model_type in ['roberta']:
-                # HACK(label indices are swapped in RoBERTa pretrained model)
-                label_list[1], label_list[2] = label_list[2], label_list[1] 
-            desc_examples = desc_processor.get_dev_examples(args.data_dir, drug_indx) if evaluate else desc_processor.get_train_examples(args.data_dir, drug_indx)
-            desc_features = convert_examples_to_features(desc_examples,
-                                                    desc_tokenizer,
-                                                    label_list=label_list,
-                                                    max_length=desc_max_seq_length,
-                                                    output_mode=output_mode,
-                                                    pad_on_left=bool(args.model_type in ['xlnet']),                 # pad on the left for xlnet
-                                                    pad_token=tokenizer.convert_tokens_to_ids([tokenizer.pad_token])[0],
-                                                    pad_token_segment_id=4 if args.model_type in ['xlnet'] else 0,
-            )
-            if args.local_rank in [-1, 0]:
-                logger.info("Saving description of drug%s features into cached file %s", drug_indx, cached_desc_features_file)
-                torch.save(desc_features, cached_desc_features_file)
-        all_desc_features.append(desc_features)
+    # all_desc_features = []
+    # for drug_indx in (1,2):
+    #     cached_desc_features_file = os.path.join(args.data_dir, 'cached_desc{}_{}_{}_{}_{}'.format(
+    #         drug_indx,
+    #         'dev' if evaluate else 'train',
+    #         list(filter(None, args.model_name_or_path.split('/'))).pop(),
+    #         str(desc_max_seq_length),
+    #         str(task)))
+    #     if os.path.exists(cached_desc_features_file) and not args.overwrite_cache:
+    #         logger.info("Loading description of drug%s features from cached file %s", drug_indx, cached_desc_features_file)
+    #         desc_features = torch.load(cached_desc_features_file)
+    #     else:
+    #         logger.info("Creating description of drug%s features from dataset file at %s", drug_indx, args.data_dir)
+    #         # label_list = desc_processor.get_labels()
+    #         label_list = ['negative', 'mechanism', 'effect', 'advise', 'int']
+    #         if task in ['mnli', 'mnli-mm'] and args.model_type in ['roberta']:
+    #             # HACK(label indices are swapped in RoBERTa pretrained model)
+    #             label_list[1], label_list[2] = label_list[2], label_list[1] 
+    #         desc_examples = desc_processor.get_dev_examples(args.data_dir, drug_indx) if evaluate else desc_processor.get_train_examples(args.data_dir, drug_indx)
+    #         desc_features = convert_examples_to_features(desc_examples,
+    #                                                 desc_tokenizer,
+    #                                                 label_list=label_list,
+    #                                                 max_length=desc_max_seq_length,
+    #                                                 output_mode=output_mode,
+    #                                                 pad_on_left=bool(args.model_type in ['xlnet']),                 # pad on the left for xlnet
+    #                                                 pad_token=tokenizer.convert_tokens_to_ids([tokenizer.pad_token])[0],
+    #                                                 pad_token_segment_id=4 if args.model_type in ['xlnet'] else 0,
+    #         )
+    #         if args.local_rank in [-1, 0]:
+    #             logger.info("Saving description of drug%s features into cached file %s", drug_indx, cached_desc_features_file)
+    #             torch.save(desc_features, cached_desc_features_file)
+    #     all_desc_features.append(desc_features)
 
 
     if args.local_rank == 0 and not evaluate:
@@ -469,13 +469,20 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
     elif output_mode == "regression":
         all_labels = torch.tensor([f.label for f in features], dtype=torch.float)
 
-    all_desc1_ii = torch.tensor([f.input_ids for f in all_desc_features[0]], dtype=torch.long)
-    all_desc1_am = torch.tensor([f.attention_mask for f in all_desc_features[0]], dtype=torch.long)
-    all_desc1_tti = torch.tensor([f.token_type_ids for f in all_desc_features[0]], dtype=torch.long)
-    all_desc2_ii = torch.tensor([f.input_ids for f in all_desc_features[1]], dtype=torch.long)
-    all_desc2_am = torch.tensor([f.attention_mask for f in all_desc_features[1]], dtype=torch.long)
-    all_desc2_tti = torch.tensor([f.token_type_ids for f in all_desc_features[1]], dtype=torch.long)
+    # all_desc1_ii = torch.tensor([f.input_ids for f in all_desc_features[0]], dtype=torch.long)
+    # all_desc1_am = torch.tensor([f.attention_mask for f in all_desc_features[0]], dtype=torch.long)
+    # all_desc1_tti = torch.tensor([f.token_type_ids for f in all_desc_features[0]], dtype=torch.long)
+    # all_desc2_ii = torch.tensor([f.input_ids for f in all_desc_features[1]], dtype=torch.long)
+    # all_desc2_am = torch.tensor([f.attention_mask for f in all_desc_features[1]], dtype=torch.long)
+    # all_desc2_tti = torch.tensor([f.token_type_ids for f in all_desc_features[1]], dtype=torch.long)
 
+    all_desc1_ii = torch.tensor([f.input_ids for f in features], dtype=torch.long)
+    all_desc1_am = torch.tensor([f.input_ids for f in features], dtype=torch.long)
+    all_desc1_tti = torch.tensor([f.input_ids for f in features], dtype=torch.long)
+    all_desc2_ii = torch.tensor([f.input_ids for f in features], dtype=torch.long)
+    all_desc2_am = torch.tensor([f.input_ids for f in features], dtype=torch.long)
+    all_desc2_tti = torch.tensor([f.input_ids for f in features], dtype=torch.long)
+    
     # Fingerprint
     fingerprint_indices = torch.tensor(list(range(len(features))), dtype=torch.long)
 
