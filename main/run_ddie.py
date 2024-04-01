@@ -30,7 +30,7 @@ import torch
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
-
+from sklearn.metrics import confusion_matrix
 try:
     from torch.utils.tensorboard import SummaryWriter
 except:
@@ -54,6 +54,7 @@ from transformers import (WEIGHTS_NAME, BertConfig,
 
 from transformers import AdamW, WarmupLinearSchedule
 from radam import RAdam, PlainRAdam, AdamW
+import wandb
 
 from modeling_ddie import BertForSequenceClassification
 
@@ -328,7 +329,10 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
             preds = np.argmax(preds, axis=1)
         elif args.output_mode == "regression":
             preds = np.squeeze(preds)
+        cm = confusion_matrix(out_label_ids, preds, labels=[0, 1, 2, 3, 4])
+        print(cm)
         result = compute_metrics(eval_task, preds, out_label_ids)
+        wandb.log(dict(result))
         results.update(result)
 
         output_eval_file = os.path.join(eval_output_dir, prefix, "eval_results.txt")
@@ -628,6 +632,11 @@ def main():
     parser.add_argument('--freeze_pretrained_parameters', action='store_true', help="Whether to freeze parameters pretrained on database")
 
     args = parser.parse_args()
+    wandb.login(key='7801339f18c9b00cf55e8f3c250afa3cba1d141b')
+    wandb.init(
+        project="DDI-KT-2024",
+        name="DESC REPO"
+    )
 
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train and not args.overwrite_output_dir:
         raise ValueError("Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(args.output_dir))

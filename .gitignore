@@ -1,2 +1,4 @@
 main/runs
 main/*.sh
+main/*.pt
+main/__pycache__/
