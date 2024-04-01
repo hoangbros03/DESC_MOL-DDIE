@@ -24,6 +24,7 @@ import os
 import random
 import json
 import copy
+from datetime import datetime as dt
 
 import numpy as np
 import torch
@@ -636,7 +637,7 @@ def main():
     wandb.login(key='7801339f18c9b00cf55e8f3c250afa3cba1d141b')
     wandb.init(
         project="DDI-KT-2024",
-        name="DESC REPO"
+        name=f"DESC REPO  {dt.now().isoformat()[2:-7]}"
     )
 
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train and not args.overwrite_output_dir:
