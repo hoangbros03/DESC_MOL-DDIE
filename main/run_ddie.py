@@ -228,10 +228,6 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
                 model.zero_grad()
                 global_step += 1
 
-            # TODO: RM it
-            if global_step > 10:
-                break
-
             if args.max_steps > 0 and global_step > args.max_steps:
                 epoch_iterator.close()
                 break
