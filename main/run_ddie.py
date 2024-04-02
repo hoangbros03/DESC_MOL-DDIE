@@ -265,9 +265,9 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
                 model.zero_grad()
                 global_step += 1
 
-                # TODO :RM IT
-                if global_step >10:
-                    break
+                # # TODO :RM IT
+                # if global_step >10:
+                #     break
                 if args.local_rank in [-1, 0] and args.logging_steps > 0 and global_step % args.logging_steps == 0:
                     # Log metrics
                     if args.local_rank == -1 and args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
