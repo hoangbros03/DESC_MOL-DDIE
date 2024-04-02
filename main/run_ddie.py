@@ -402,6 +402,7 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
         
         _, result = eval_bc5(preds, test_candidates)
         wandb.log(dict(result))
+        print(dict(result))
         results.update(result)
 
         try:
