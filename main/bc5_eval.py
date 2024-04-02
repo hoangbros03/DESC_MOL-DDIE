@@ -34,7 +34,7 @@ def evaluate_bc5(answer, verbose=False):
     """
     # load intra annotation
     intra = []
-    with open('ddi_kt_2024/bc5_eval/bc5_intra.txt') as f:
+    with open('bc5_intra.txt') as f:
         for l in f:
             pmid, pair = l.strip().split()
             e1, e2 = pair.split('_')
@@ -45,7 +45,7 @@ def evaluate_bc5(answer, verbose=False):
     intra_eval_map = {}  # dict (pmid, e1, e2) => relation (n + 1)
     inter_eval_map = {}  # dict (pmid, e1, e2) => relation (n + 1)
 
-    f = open('ddi_kt_2024/bc5_eval/bc5_evaluate.txt')
+    f = open('bc5_evaluate.txt')
     for line in f:
         pmid, rel, e1, e2 = line.strip().split()
         full_eval_map[(pmid, e1, e2)] = rel
@@ -85,7 +85,7 @@ def evaluate_bc5_intra(eval_data):
     """
     # load evaluate map
     eval_map = {}  # dict (pmid, e1, e2) => relation (n + 1)
-    f = open('ddi_kt_2024/bc5_eval/bc5_evaluate_intra.txt')
+    f = open('bc5_evaluate_intra.txt')
     for line in f:
         pmid, rel, e1, e2 = line.strip().split()
         if rel.endswith('(r)'):
