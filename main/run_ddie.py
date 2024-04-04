@@ -144,6 +144,7 @@ def convert_pred_to_lst(pred, cand):
     return dct, lst
 
 def set_seed(args):
+    print("SETTING SEED...")
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
