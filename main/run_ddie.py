@@ -397,11 +397,13 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
             preds = np.argmax(preds, axis=1)
         elif args.output_mode == "regression":
             preds = np.squeeze(preds)
-        # cm = confusion_matrix(out_label_ids, preds, labels=[0, 1, 2, 3, 4])
-        # print(cm)
-        # result = compute_metrics(eval_task, preds, out_label_ids)
-        
-        _, result = eval_bc5(preds, test_candidates)
+            
+        if args.data == "ddi":
+            cm = confusion_matrix(out_label_ids, preds, labels=[0, 1, 2, 3, 4])
+            print(cm)
+            result = compute_metrics(eval_task, preds, out_label_ids)
+        else:
+            _, result = eval_bc5(preds, test_candidates)
         wandb.log(dict(result))
         print(dict(result))
         results.update(result)
@@ -609,6 +611,7 @@ def main():
                         help="The name of the task to train selected in the list: " + ", ".join(processors.keys()))
     parser.add_argument("--output_dir", default=None, type=str, required=True,
                         help="The output directory where the model predictions and checkpoints will be written.")
+    parser.add_argument("--data", type=str, default="ddi", help="Name of data")
 
     ## Other parameters
     parser.add_argument("--config_name", default="", type=str,
