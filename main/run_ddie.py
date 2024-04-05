@@ -290,7 +290,10 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer, random_sampler=
                     tb_writer.add_scalar('loss', (tr_loss - logging_loss)/args.logging_steps, global_step)
                     logging_loss = tr_loss
 
-                if args.local_rank in [-1, 0] and args.save_steps > 0 and global_step % args.save_steps == 0:
+                if (args.local_rank in [-1, 0] and args.save_steps > 0 and global_step % args.save_steps == 0) or (max_f1 < results['microF']):
+                    if (max_f1 < results['microF']):
+                        max_f1 = result['microF']
+                        print("MAX F1: ", max_f1, " now saving model")
                     # Save model checkpoint
                     output_dir = os.path.join(args.output_dir, 'checkpoint-{}'.format(global_step))
                     if not os.path.exists(output_dir):
@@ -328,18 +331,6 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer, random_sampler=
                 storage_model.restore_params()
             else:
                 results = evaluate(args, model, tokenizer, desc_tokenizer, prefix=prefix)
-
-            # check and save bert if needed
-            try:
-                if max_f1 < results['microF']:
-                    max_f1 = result['microF']
-                    if epoch > 3:
-                        os.makedirs(str(Path(output_dir) / f"epoch{epoch}"), exist_ok=True)
-                        model_to_save.save_pretrained(str(Path(output_dir) / f"epoch{epoch}"))
-                        torch.save(args, os.path.join(str(Path(output_dir) / f"epoch{epoch}"), 'training_args.bin'))
-                        print("Save model successfully at epoch {}".format(epoch))
-            except:
-                print("Failed to save bert model... No worry")
 
     if args.local_rank in [-1, 0]:
         tb_writer.close()
