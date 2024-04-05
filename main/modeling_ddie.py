@@ -145,6 +145,8 @@ class BertForSequenceClassification(BertPreTrainedModel):
         self.init_weights()
         
         if args.use_cnn:
+            # TODO: RM IT
+            torch.manual_seed(42)
             self.pos_emb.weight.data.uniform_(-1e-3, 1e-3)
 
         self.bert = BertModel.from_pretrained(args.model_name_or_path)

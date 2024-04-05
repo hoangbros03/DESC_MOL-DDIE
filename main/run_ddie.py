@@ -26,6 +26,7 @@ import json
 import copy
 from datetime import datetime as dt
 import pickle as pkl
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -86,7 +87,10 @@ def load_pkl(path):
     with open(path, 'rb') as file:
         return pkl.load(file)
 
-test_candidates = load_pkl("candidates.test.pkl")
+try:
+    test_candidates = load_pkl("candidates.test.pkl")
+except:
+    print("candidates.test.pkl not found. However, it is for bc5 dataset evaluation. Skip this part.")
 
 def eval_bc5(pred, cand):
     # Pred after argmax, cand is test_candidate
@@ -161,8 +165,9 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
         tb_writer = SummaryWriter()
 
     args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
-    train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
-    train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
+    # train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
+    # train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
+    train_dataloader = DataLoader(train_dataset, batch_size=args.train_batch_size)
 
     if args.max_steps > 0:
         t_total = args.max_steps
@@ -218,6 +223,8 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
     model.zero_grad()
     train_iterator = trange(int(args.num_train_epochs), desc="Epoch", disable=args.local_rank not in [-1, 0])
     set_seed(args)  # Added here for reproductibility (even between python 2 and 3)
+
+    max_f1 = -9999.0
     #for _ in train_iterator:
     for epoch, _ in enumerate(train_iterator, start=1):
         epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
@@ -318,6 +325,17 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
                 storage_model.restore_params()
             else:
                 results = evaluate(args, model, tokenizer, desc_tokenizer, prefix=prefix)
+
+            # check and save bert if needed
+            try:
+                if max_f1 < results['microF']:
+                    max_f1 = result['microF']
+                    if epoch > 3:
+                        os.makedirs(str(Path(output_dir) / f"epoch{epoch}"), exist_ok=True)
+                        model.bert.save_pretrained(str(Path(output_dir) / f"epoch{epoch}"))
+                        print("Save model successfully at epoch {}".format(epoch))
+            except:
+                print("Failed to save bert model... No worry")
 
     if args.local_rank in [-1, 0]:
         tb_writer.close()
@@ -790,6 +808,11 @@ def main():
     args.model_type = args.model_type.lower()
     config_class, model_class, tokenizer_class = MODEL_CLASSES[args.model_type]
     config = config_class.from_pretrained(args.config_name if args.config_name else args.model_name_or_path, num_labels=num_labels, finetuning_task=args.task_name)
+
+    # TODO: RM IT
+    # config.attention_probs_dropout_prob = 0.0
+    # config.hidden_dropout_prob = 0.0
+    
     tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name if args.tokenizer_name else args.model_name_or_path, do_lower_case=args.do_lower_case)
     desc_tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name if args.tokenizer_name else args.model_name_or_path, do_lower_case=args.do_lower_case)
     #model = model_class.from_pretrained(args.model_name_or_path, from_tf=bool('.ckpt' in args.model_name_or_path), config=config)
