@@ -159,15 +159,18 @@ def set_seed(args):
 
 
 #def train(args, train_dataset, model, tokenizer, storage_model):
-def train(args, train_dataset, model, tokenizer, desc_tokenizer):
+def train(args, train_dataset, model, tokenizer, desc_tokenizer, random_sampler=False):
     """ Train the model """
     if args.local_rank in [-1, 0]:
         tb_writer = SummaryWriter()
 
     args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
-    train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
-    train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
-    # train_dataloader = DataLoader(train_dataset, batch_size=args.train_batch_size)
+    
+    if random_sampler:
+        train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
+        train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
+    else:
+        train_dataloader = DataLoader(train_dataset, batch_size=args.train_batch_size)
 
     if args.max_steps > 0:
         t_total = args.max_steps
@@ -332,7 +335,8 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
                     max_f1 = result['microF']
                     if epoch > 3:
                         os.makedirs(str(Path(output_dir) / f"epoch{epoch}"), exist_ok=True)
-                        model.bert.save_pretrained(str(Path(output_dir) / f"epoch{epoch}"))
+                        model_to_save.save_pretrained(str(Path(output_dir) / f"epoch{epoch}"))
+                        torch.save(args, os.path.join(str(Path(output_dir) / f"epoch{epoch}"), 'training_args.bin'))
                         print("Save model successfully at epoch {}".format(epoch))
             except:
                 print("Failed to save bert model... No worry")
@@ -734,6 +738,7 @@ def main():
     parser.add_argument('--pretrained_gnn_dir', type=str, default=None, help="The path to pre-trained GNN model dir")
     parser.add_argument('--pretrained_desc_dir', type=str, default=None, help="The path to pre-trained desc BERT model dir")
     parser.add_argument('--freeze_pretrained_parameters', action='store_true', help="Whether to freeze parameters pretrained on database")
+    parser.add_argument('--random_sampler', action='store_true', help="random_sampler or not")
 
     args = parser.parse_args()
 
@@ -847,7 +852,7 @@ def main():
         #train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False)
         train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, desc_tokenizer, evaluate=False, data_type="train")
         # train_dataset =torch.load ("ddi_train.pt")
-        global_step, tr_loss, storage_model =  train(args, train_dataset, model, tokenizer, desc_tokenizer)
+        global_step, tr_loss, storage_model =  train(args, train_dataset, model, tokenizer, desc_tokenizer, random_sampler=args.random_sampler)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
 
     # Saving best-practices: if you use defaults names for the model, you can reload it using from_pretrained()
