@@ -25,6 +25,7 @@ import random
 import json
 import copy
 from datetime import datetime as dt
+import pickle as pkl
 
 import numpy as np
 import torch
@@ -66,7 +67,6 @@ from transformers import glue_output_modes as output_modes
 from processor_ddie import ddie_processors as processors
 from transformers import glue_convert_examples_to_features as convert_examples_to_features
 
-
 logger = logging.getLogger(__name__)
 
 ALL_MODELS = sum((tuple(conf.pretrained_config_archive_map.keys()) for conf in (BertConfig, XLNetConfig, XLMConfig, 
@@ -80,8 +80,71 @@ MODEL_CLASSES = {
     'distilbert': (DistilBertConfig, DistilBertForSequenceClassification, DistilBertTokenizer)
 }
 
+# For bc5 purpose
+from bc5_eval import *
+def load_pkl(path):
+    with open(path, 'rb') as file:
+        return pkl.load(file)
+
+test_candidates = load_pkl("candidates.test.pkl")
+
+def eval_bc5(pred, cand):
+    # Pred after argmax, cand is test_candidate
+    dct, lst = convert_pred_to_lst(pred, cand)
+    return_tuple = evaluate_bc5(lst)
+    data = {
+    'p': return_tuple[0][0],
+    'r': return_tuple[0][1],
+    'f': return_tuple[0][2],
+    'intra_p': return_tuple[1][0],
+    'intra_r': return_tuple[1][1],
+    'intra_f': return_tuple[1][2],
+    'inter_p': return_tuple[2][0],
+    'inter_r': return_tuple[2][1],
+    'inter_f': return_tuple[2][2]
+    }
+    return return_tuple, data
+
+def convert_pred_to_lst(pred, cand):
+    dct = {}
+    for i in range(len(pred)):
+        if pred[i] == 1:
+            if cand[i]['e1']['@id'] == '-1' or cand[i]['e2']['@id'] == '-1':
+                continue
+            elif len(cand[i]['e1']['@id'].split('|')) > 1:
+                tmp = cand[i]['e1']['@id'].split('|')
+                for ent in tmp:
+                    idx = cand[i]['id'].split('_')[0]
+                    if idx in dct.keys():
+                        if f"{ent}_{cand[i]['e2']['@id']}" not in dct[idx]:
+                            dct[idx].append(f"{ent}_{cand[i]['e2']['@id']}")
+                    else:
+                        dct[idx] = [f"{ent}_{cand[i]['e2']['@id']}"]
+            elif len(cand[i]['e2']['@id'].split('|')) > 1:
+                tmp = cand[i]['e2']['@id'].split('|')
+                for ent in tmp:
+                    idx = cand[i]['id'].split('_')[0]
+                    if idx in dct.keys():
+                        if f"{cand[i]['e1']['@id']}_{ent}" not in dct[idx]:
+                            dct[idx].append(f"{cand[i]['e1']['@id']}_{ent}")
+                    else:
+                        dct[idx] = [f"{cand[i]['e1']['@id']}_{ent}"]
+            else:
+                idx = cand[i]['id'].split('_')[0]
+                if idx in dct.keys():
+                    if f"{cand[i]['e1']['@id']}_{cand[i]['e2']['@id']}" not in dct[idx]:
+                        dct[idx].append(f"{cand[i]['e1']['@id']}_{cand[i]['e2']['@id']}")
+                else:
+                    dct[idx] = [f"{cand[i]['e1']['@id']}_{cand[i]['e2']['@id']}"]
+
+    lst = []
+    for k, v in dct.items():
+        for _ in v:
+            lst.append((k, _, "CID"))
+    return dct, lst
 
 def set_seed(args):
+    print("SETTING SEED...")
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -203,6 +266,9 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
                 model.zero_grad()
                 global_step += 1
 
+                # # TODO :RM IT
+                # if global_step >10:
+                #     break
                 if args.local_rank in [-1, 0] and args.logging_steps > 0 and global_step % args.logging_steps == 0:
                     # Log metrics
                     if args.local_rank == -1 and args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
@@ -331,18 +397,26 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
             preds = np.argmax(preds, axis=1)
         elif args.output_mode == "regression":
             preds = np.squeeze(preds)
-        cm = confusion_matrix(out_label_ids, preds, labels=[0, 1, 2, 3, 4])
-        print(cm)
-        result = compute_metrics(eval_task, preds, out_label_ids)
+            
+        if args.data == "ddi":
+            cm = confusion_matrix(out_label_ids, preds, labels=[0, 1, 2, 3, 4])
+            print(cm)
+            result = compute_metrics(eval_task, preds, out_label_ids)
+        else:
+            _, result = eval_bc5(preds, test_candidates)
         wandb.log(dict(result))
+        print(dict(result))
         results.update(result)
 
-        output_eval_file = os.path.join(eval_output_dir, prefix, "eval_results.txt")
-        with open(output_eval_file, "w") as writer:
-            logger.info("***** Eval results {} *****".format(prefix))
-            for key in sorted(result.keys()):
-                logger.info("  %s = %s", key, str(result[key]))
-                writer.write("%s = %s\n" % (key, str(result[key])))
+        try:
+            output_eval_file = os.path.join(eval_output_dir, prefix, "eval_results.txt")
+            with open(output_eval_file, "w") as writer:
+                logger.info("***** Eval results {} *****".format(prefix))
+                for key in sorted(result.keys()):
+                    logger.info("  %s = %s", key, str(result[key]))
+                    writer.write("%s = %s\n" % (key, str(result[key])))
+        except Exception as e:
+            print("Can't output result to file, no worry...")
 
     return results
 
@@ -372,14 +446,23 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
             label_list[1], label_list[2] = label_list[2], label_list[1] 
         if data_type=="train":
             examples = torch.load("examples_train.pt")
+            # Check to change label if needed
+            lb_list = ['false', 'mechanism', 'effect', 'advise', 'int']
             for e_idx in range(len(examples)):
                 if examples[e_idx].label == 'negative':
                     examples[e_idx].label = 'false'
+                elif examples[e_idx].label in [0,1]:
+                    examples[e_idx].label = lb_list[examples[e_idx].label]
+            
         elif data_type=="test":
             examples = torch.load("examples_test.pt")
+            # Check to change label if needed
+            lb_list = ['false', 'mechanism', 'effect', 'advise', 'int']
             for e_idx in range(len(examples)):
                 if examples[e_idx].label == 'negative':
                     examples[e_idx].label = 'false'
+                elif examples[e_idx].label in [0,1]:
+                    examples[e_idx].label = lb_list[examples[e_idx].label]
         else:
             examples = processor.get_dev_examples(args.data_dir) if evaluate else processor.get_train_examples(args.data_dir)
 
@@ -528,6 +611,7 @@ def main():
                         help="The name of the task to train selected in the list: " + ", ".join(processors.keys()))
     parser.add_argument("--output_dir", default=None, type=str, required=True,
                         help="The output directory where the model predictions and checkpoints will be written.")
+    parser.add_argument("--data", type=str, default="ddi", help="Name of data")
 
     ## Other parameters
     parser.add_argument("--config_name", default="", type=str,
@@ -634,6 +718,7 @@ def main():
     parser.add_argument('--freeze_pretrained_parameters', action='store_true', help="Whether to freeze parameters pretrained on database")
 
     args = parser.parse_args()
+
     wandb.login(key='7801339f18c9b00cf55e8f3c250afa3cba1d141b')
     wandb.init(
         project="DDI-KT-2024",
