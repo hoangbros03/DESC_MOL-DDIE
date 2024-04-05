@@ -290,19 +290,6 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer, random_sampler=
                     tb_writer.add_scalar('loss', (tr_loss - logging_loss)/args.logging_steps, global_step)
                     logging_loss = tr_loss
 
-                if (args.local_rank in [-1, 0] and args.save_steps > 0 and global_step % args.save_steps == 0) or (max_f1 < results['microF']):
-                    if (max_f1 < results['microF']):
-                        max_f1 = result['microF']
-                        print("MAX F1: ", max_f1, " now saving model")
-                    # Save model checkpoint
-                    output_dir = os.path.join(args.output_dir, 'checkpoint-{}'.format(global_step))
-                    if not os.path.exists(output_dir):
-                        os.makedirs(output_dir)
-                    model_to_save = model.module if hasattr(model, 'module') else model  # Take care of distributed/parallel training
-                    model_to_save.save_pretrained(output_dir)
-                    torch.save(args, os.path.join(output_dir, 'training_args.bin'))
-                    logger.info("Saving model checkpoint to %s", output_dir)
-
             if args.tpu:
                 args.xla_model.optimizer_step(optimizer, barrier=True)
                 model.zero_grad()
@@ -332,6 +319,18 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer, random_sampler=
             else:
                 results = evaluate(args, model, tokenizer, desc_tokenizer, prefix=prefix)
 
+        if (args.local_rank in [-1, 0] and args.save_steps > 0 and global_step % args.save_steps == 0) or (max_f1 < results['microF']):
+            if (max_f1 < results['microF']):
+                max_f1 = result['microF']
+                print("MAX F1: ", max_f1, " now saving model")
+            # Save model checkpoint
+            output_dir = os.path.join(args.output_dir, 'checkpoint-{}'.format(global_step))
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            model_to_save = model.module if hasattr(model, 'module') else model  # Take care of distributed/parallel training
+            model_to_save.save_pretrained(output_dir)
+            torch.save(args, os.path.join(output_dir, 'training_args.bin'))
+            logger.info("Saving model checkpoint to %s", output_dir)
     if args.local_rank in [-1, 0]:
         tb_writer.close()
 
