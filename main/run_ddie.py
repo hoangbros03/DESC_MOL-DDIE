@@ -321,7 +321,7 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer, random_sampler=
 
         if (args.local_rank in [-1, 0] and args.save_steps > 0 and global_step % args.save_steps == 0) or (max_f1 < results['microF']):
             if (max_f1 < results['microF']):
-                max_f1 = result['microF']
+                max_f1 = results['microF']
                 print("MAX F1: ", max_f1, " now saving model")
             # Save model checkpoint
             output_dir = os.path.join(args.output_dir, 'checkpoint-{}'.format(global_step))
