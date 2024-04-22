@@ -452,14 +452,14 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
     else:
         logger.info("Creating features from dataset file at %s", args.data_dir)
         # label_list = processor.get_labels()
-        label_list = ['false', 'mechanism', 'effect', 'advise', 'int']
+        label_list = ['false', 'advise', 'effect',  'mechanism', 'int']
         if task in ['mnli', 'mnli-mm'] and args.model_type in ['roberta']:
             # HACK(label indices are swapped in RoBERTa pretrained model)
             label_list[1], label_list[2] = label_list[2], label_list[1] 
         if data_type=="train":
             examples = torch.load("examples_train.pt")
             # Check to change label if needed
-            lb_list = ['false', 'mechanism', 'effect', 'advise', 'int']
+            lb_list = ['false', 'advise', 'effect',  'mechanism', 'int']
             for e_idx in range(len(examples)):
                 if examples[e_idx].label == 'negative':
                     examples[e_idx].label = 'false'
@@ -469,7 +469,7 @@ def load_and_cache_examples(args, task, tokenizer, desc_tokenizer, evaluate=Fals
         elif data_type=="test":
             examples = torch.load("examples_test.pt")
             # Check to change label if needed
-            lb_list = ['false', 'mechanism', 'effect', 'advise', 'int']
+            lb_list = ['false', 'advise', 'effect',  'mechanism', 'int']
             for e_idx in range(len(examples)):
                 if examples[e_idx].label == 'negative':
                     examples[e_idx].label = 'false'
