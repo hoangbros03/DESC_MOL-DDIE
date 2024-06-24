@@ -145,7 +145,7 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
                    args.train_batch_size * args.gradient_accumulation_steps * (torch.distributed.get_world_size() if args.local_rank != -1 else 1))
     logger.info("  Gradient Accumulation steps = %d", args.gradient_accumulation_steps)
     logger.info("  Total optimization steps = %d", t_total)
-
+    print(model)
     # fingerprint = np.load(os.path.join(args.fingerprint_dir, 'corpus_train.npy'), allow_pickle=True)
 
     global_step = 0
@@ -155,8 +155,8 @@ def train(args, train_dataset, model, tokenizer, desc_tokenizer):
     set_seed(args)  # Added here for reproductibility (even between python 2 and 3)
     #for _ in train_iterator:
     for epoch, _ in enumerate(train_iterator, start=1):
-        epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
-        for step, batch in enumerate(epoch_iterator):
+        # epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
+        for step, batch in enumerate(train_dataloader):
             model.train()
             fp_indices = batch[11]
             batch = tuple(t.to(args.device) for t in batch)
@@ -286,7 +286,7 @@ def evaluate(args, model, tokenizer, desc_tokenizer, prefix=""):
         nb_eval_steps = 0
         preds = None
         out_label_ids = None
-        for batch in tqdm(eval_dataloader, desc="Evaluating"):
+        for batch in eval_dataloader:
             model.eval()
             fp_indices = batch[11]
             batch = tuple(t.to(args.device) for t in batch)
