@@ -159,6 +159,7 @@ class BertForSequenceClassification(BertPreTrainedModel):
         self.gnn_layer_output = args.gnn_layer_output
         self.use_mol = args.use_mol
         self.middle_layer_size = args.middle_layer_size
+        print(self.num_labels)
 
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None,
                 position_ids=None, head_mask=None,
